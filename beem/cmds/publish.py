@@ -54,6 +54,16 @@ def my_custom_msg_generator(sequence_length):
         seq += 1
 
 
+def file_based_msg_generator(topic, path, sequence_length):
+    file = open(path, "r")
+    payload = file.read()
+    print payload;
+    seq = 0
+    while seq < sequence_length:
+        yield (seq, topic, payload)
+        seq += 1
+
+
 def _worker(options, proc_num, auth=None):
     """
     Wrapper to run a test and push the results back onto a queue.
@@ -73,7 +83,8 @@ def _worker(options, proc_num, auth=None):
 
     # Provide a custom generator
     #msg_gen = my_custom_msg_generator(options.msg_count)
-    msg_gen = beem.msgs.createGenerator(cid, options)
+    #msg_gen = beem.msgs.createGenerator(cid, options)
+    msg_gen = file_based_msg_generator(options.topic, options.path, options.msg_count)
     # This helps introduce jitter so you don't have many threads all in sync
     time.sleep(random.uniform(1, 10))
     ts.run(msg_gen, qos=options.qos)
@@ -134,7 +145,10 @@ def add_args(subparsers):
     parser.add_argument(
         "--thread_ratio", type=int, default=1,
         help="Threads per process (bridged multiprocessing) WARNING! VERY ALPHA!")
-
+    parser.add_argument(
+        "--path", help="set the file from which the payload is extracted")
+    parser.add_argument(
+        "--topic", help="set the topic to which the messages should be sent")
     parser.add_argument(
         "-b", "--bridge", action="store_true",
         help="""Instead of connecting directly to the target, fire up a
